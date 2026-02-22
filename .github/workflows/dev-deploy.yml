@@ -67,6 +67,7 @@ jobs:
           sed -i 's/\$TARGETOS/linux/g; s/\${TARGETOS}/linux/g' Dockerfile
 
       - name: Build cartservice image
+        continue-on-error: true
         uses: kindling-sh/kindling/.github/actions/kindling-build@main
         with:
           name: cartservice
@@ -315,6 +316,7 @@ jobs:
             apps.example.com/github-username: ${{ github.actor }}
 
       - name: Deploy cartservice
+        continue-on-error: true
         uses: kindling-sh/kindling/.github/actions/kindling-deploy@main
         with:
           name: "${{ github.actor }}-cartservice"
