@@ -1,0 +1,491 @@
+name: Dev Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  REGISTRY: "registry:5000"
+  TAG: "${{ github.actor }}-${{ github.sha }}"
+
+jobs:
+  build-and-deploy:
+    runs-on: [self-hosted, "${{ github.actor }}"]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Clean builds directory
+        shell: bash
+        run: |
+          rm -f /builds/*.done /builds/*.request /builds/*.processing \
+                /builds/*.apply /builds/*.apply-done /builds/*.apply-log \
+                /builds/*.apply-exitcode /builds/*.exitcode \
+                /builds/*.log /builds/*.dest /builds/*.tar.gz \
+                /builds/*.yaml /builds/*.sh
+
+      # -- Build all images --
+
+      - name: Patch adservice Dockerfile for Kaniko
+        shell: bash
+        run: |
+          cd ${{ github.workspace }}/src/adservice
+          sed -i 's/FROM --platform=\${BUILDPLATFORM} /FROM /g' Dockerfile
+          sed -i '/^ARG TARGETPLATFORM$/d' Dockerfile
+          sed -i '/^ARG TARGETARCH$/d' Dockerfile
+          sed -i '/^ARG BUILDPLATFORM$/d' Dockerfile
+          sed -i '/^ARG TARGETOS$/d' Dockerfile
+          sed -i '/^ARG TARGETVARIANT$/d' Dockerfile
+          sed -i 's/\$TARGETARCH/arm64/g; s/\${TARGETARCH}/arm64/g' Dockerfile
+          sed -i 's/\$TARGETPLATFORM/linux\/arm64/g; s/\${TARGETPLATFORM}/linux\/arm64/g' Dockerfile
+          sed -i 's/\$BUILDPLATFORM/linux\/arm64/g; s/\${BUILDPLATFORM}/linux\/arm64/g' Dockerfile
+          sed -i 's/\$TARGETOS/linux/g; s/\${TARGETOS}/linux/g' Dockerfile
+
+      - name: Build adservice image
+        uses: kindling-sh/kindling/.github/actions/kindling-build@main
+        with:
+          name: adservice
+          context: ${{ github.workspace }}/src/adservice
+          image: "${{ env.REGISTRY }}/adservice:${{ env.TAG }}"
+          timeout: "900"
+
+      - name: Patch cartservice Dockerfile for Kaniko
+        shell: bash
+        run: |
+          cd ${{ github.workspace }}/src/cartservice/src
+          sed -i 's/FROM --platform=\${BUILDPLATFORM} /FROM /g' Dockerfile
+          sed -i '/^ARG TARGETPLATFORM$/d' Dockerfile
+          sed -i '/^ARG TARGETARCH$/d' Dockerfile
+          sed -i '/^ARG BUILDPLATFORM$/d' Dockerfile
+          sed -i '/^ARG TARGETOS$/d' Dockerfile
+          sed -i '/^ARG TARGETVARIANT$/d' Dockerfile
+          sed -i 's/\$TARGETARCH/arm64/g; s/\${TARGETARCH}/arm64/g' Dockerfile
+          sed -i 's/\$TARGETPLATFORM/linux\/arm64/g; s/\${TARGETPLATFORM}/linux\/arm64/g' Dockerfile
+          sed -i 's/\$BUILDPLATFORM/linux\/arm64/g; s/\${BUILDPLATFORM}/linux\/arm64/g' Dockerfile
+          sed -i 's/\$TARGETOS/linux/g; s/\${TARGETOS}/linux/g' Dockerfile
+
+      - name: Build cartservice image
+        uses: kindling-sh/kindling/.github/actions/kindling-build@main
+        with:
+          name: cartservice
+          context: ${{ github.workspace }}/src/cartservice/src
+          image: "${{ env.REGISTRY }}/cartservice:${{ env.TAG }}"
+          timeout: "900"
+
+      - name: Patch checkoutservice Dockerfile for Kaniko
+        shell: bash
+        run: |
+          cd ${{ github.workspace }}/src/checkoutservice
+          sed -i 's/FROM --platform=\${BUILDPLATFORM} /FROM /g' Dockerfile
+          sed -i '/^ARG TARGETPLATFORM$/d' Dockerfile
+          sed -i '/^ARG TARGETARCH$/d' Dockerfile
+          sed -i '/^ARG BUILDPLATFORM$/d' Dockerfile
+          sed -i '/^ARG TARGETOS$/d' Dockerfile
+          sed -i '/^ARG TARGETVARIANT$/d' Dockerfile
+          sed -i 's/\$TARGETARCH/arm64/g; s/\${TARGETARCH}/arm64/g' Dockerfile
+          sed -i 's/\$TARGETPLATFORM/linux\/arm64/g; s/\${TARGETPLATFORM}/linux\/arm64/g' Dockerfile
+          sed -i 's/\$BUILDPLATFORM/linux\/arm64/g; s/\${BUILDPLATFORM}/linux\/arm64/g' Dockerfile
+          sed -i 's/\$TARGETOS/linux/g; s/\${TARGETOS}/linux/g' Dockerfile
+          sed -i 's/go build /go build -buildvcs=false /g' Dockerfile
+
+      - name: Build checkoutservice image
+        uses: kindling-sh/kindling/.github/actions/kindling-build@main
+        with:
+          name: checkoutservice
+          context: ${{ github.workspace }}/src/checkoutservice
+          image: "${{ env.REGISTRY }}/checkoutservice:${{ env.TAG }}"
+
+      - name: Patch currencyservice Dockerfile for Kaniko
+        shell: bash
+        run: |
+          cd ${{ github.workspace }}/src/currencyservice
+          sed -i 's/FROM --platform=\${BUILDPLATFORM} /FROM /g' Dockerfile
+          sed -i '/^ARG TARGETPLATFORM$/d' Dockerfile
+          sed -i '/^ARG TARGETARCH$/d' Dockerfile
+          sed -i '/^ARG BUILDPLATFORM$/d' Dockerfile
+          sed -i '/^ARG TARGETOS$/d' Dockerfile
+          sed -i '/^ARG TARGETVARIANT$/d' Dockerfile
+          sed -i 's/\$TARGETARCH/arm64/g; s/\${TARGETARCH}/arm64/g' Dockerfile
+          sed -i 's/\$TARGETPLATFORM/linux\/arm64/g; s/\${TARGETPLATFORM}/linux\/arm64/g' Dockerfile
+          sed -i 's/\$BUILDPLATFORM/linux\/arm64/g; s/\${BUILDPLATFORM}/linux\/arm64/g' Dockerfile
+          sed -i 's/\$TARGETOS/linux/g; s/\${TARGETOS}/linux/g' Dockerfile
+          sed -i '/^FROM /a ENV npm_config_cache=/tmp/.npm' Dockerfile
+
+      - name: Build currencyservice image
+        uses: kindling-sh/kindling/.github/actions/kindling-build@main
+        with:
+          name: currencyservice
+          context: ${{ github.workspace }}/src/currencyservice
+          image: "${{ env.REGISTRY }}/currencyservice:${{ env.TAG }}"
+
+      - name: Patch emailservice Dockerfile for Kaniko
+        shell: bash
+        run: |
+          cd ${{ github.workspace }}/src/emailservice
+          sed -i 's/FROM --platform=\${BUILDPLATFORM} /FROM /g' Dockerfile
+          sed -i '/^ARG TARGETPLATFORM$/d' Dockerfile
+          sed -i '/^ARG TARGETARCH$/d' Dockerfile
+          sed -i '/^ARG BUILDPLATFORM$/d' Dockerfile
+          sed -i '/^ARG TARGETOS$/d' Dockerfile
+          sed -i '/^ARG TARGETVARIANT$/d' Dockerfile
+          sed -i 's/\$TARGETARCH/arm64/g; s/\${TARGETARCH}/arm64/g' Dockerfile
+          sed -i 's/\$TARGETPLATFORM/linux\/arm64/g; s/\${TARGETPLATFORM}/linux\/arm64/g' Dockerfile
+          sed -i 's/\$BUILDPLATFORM/linux\/arm64/g; s/\${BUILDPLATFORM}/linux\/arm64/g' Dockerfile
+          sed -i 's/\$TARGETOS/linux/g; s/\${TARGETOS}/linux/g' Dockerfile
+
+      - name: Build emailservice image
+        uses: kindling-sh/kindling/.github/actions/kindling-build@main
+        with:
+          name: emailservice
+          context: ${{ github.workspace }}/src/emailservice
+          image: "${{ env.REGISTRY }}/emailservice:${{ env.TAG }}"
+
+      - name: Patch frontend Dockerfile for Kaniko
+        shell: bash
+        run: |
+          cd ${{ github.workspace }}/src/frontend
+          sed -i 's/FROM --platform=\${BUILDPLATFORM} /FROM /g' Dockerfile
+          sed -i '/^ARG TARGETPLATFORM$/d' Dockerfile
+          sed -i '/^ARG TARGETARCH$/d' Dockerfile
+          sed -i '/^ARG BUILDPLATFORM$/d' Dockerfile
+          sed -i '/^ARG TARGETOS$/d' Dockerfile
+          sed -i '/^ARG TARGETVARIANT$/d' Dockerfile
+          sed -i 's/\$TARGETARCH/arm64/g; s/\${TARGETARCH}/arm64/g' Dockerfile
+          sed -i 's/\$TARGETPLATFORM/linux\/arm64/g; s/\${TARGETPLATFORM}/linux\/arm64/g' Dockerfile
+          sed -i 's/\$BUILDPLATFORM/linux\/arm64/g; s/\${BUILDPLATFORM}/linux\/arm64/g' Dockerfile
+          sed -i 's/\$TARGETOS/linux/g; s/\${TARGETOS}/linux/g' Dockerfile
+          sed -i 's/go build /go build -buildvcs=false /g' Dockerfile
+
+      - name: Build frontend image
+        uses: kindling-sh/kindling/.github/actions/kindling-build@main
+        with:
+          name: frontend
+          context: ${{ github.workspace }}/src/frontend
+          image: "${{ env.REGISTRY }}/frontend:${{ env.TAG }}"
+
+      - name: Patch loadgenerator Dockerfile for Kaniko
+        shell: bash
+        run: |
+          cd ${{ github.workspace }}/src/loadgenerator
+          sed -i 's/FROM --platform=\${BUILDPLATFORM} /FROM /g' Dockerfile
+          sed -i '/^ARG TARGETPLATFORM$/d' Dockerfile
+          sed -i '/^ARG TARGETARCH$/d' Dockerfile
+          sed -i '/^ARG BUILDPLATFORM$/d' Dockerfile
+          sed -i '/^ARG TARGETOS$/d' Dockerfile
+          sed -i '/^ARG TARGETVARIANT$/d' Dockerfile
+          sed -i 's/\$TARGETARCH/arm64/g; s/\${TARGETARCH}/arm64/g' Dockerfile
+          sed -i 's/\$TARGETPLATFORM/linux\/arm64/g; s/\${TARGETPLATFORM}/linux\/arm64/g' Dockerfile
+          sed -i 's/\$BUILDPLATFORM/linux\/arm64/g; s/\${BUILDPLATFORM}/linux\/arm64/g' Dockerfile
+          sed -i 's/\$TARGETOS/linux/g; s/\${TARGETOS}/linux/g' Dockerfile
+
+      - name: Build loadgenerator image
+        uses: kindling-sh/kindling/.github/actions/kindling-build@main
+        with:
+          name: loadgenerator
+          context: ${{ github.workspace }}/src/loadgenerator
+          image: "${{ env.REGISTRY }}/loadgenerator:${{ env.TAG }}"
+
+      - name: Patch paymentservice Dockerfile for Kaniko
+        shell: bash
+        run: |
+          cd ${{ github.workspace }}/src/paymentservice
+          sed -i 's/FROM --platform=\${BUILDPLATFORM} /FROM /g' Dockerfile
+          sed -i '/^ARG TARGETPLATFORM$/d' Dockerfile
+          sed -i '/^ARG TARGETARCH$/d' Dockerfile
+          sed -i '/^ARG BUILDPLATFORM$/d' Dockerfile
+          sed -i '/^ARG TARGETOS$/d' Dockerfile
+          sed -i '/^ARG TARGETVARIANT$/d' Dockerfile
+          sed -i 's/\$TARGETARCH/arm64/g; s/\${TARGETARCH}/arm64/g' Dockerfile
+          sed -i 's/\$TARGETPLATFORM/linux\/arm64/g; s/\${TARGETPLATFORM}/linux\/arm64/g' Dockerfile
+          sed -i 's/\$BUILDPLATFORM/linux\/arm64/g; s/\${BUILDPLATFORM}/linux\/arm64/g' Dockerfile
+          sed -i 's/\$TARGETOS/linux/g; s/\${TARGETOS}/linux/g' Dockerfile
+          sed -i '/^FROM /a ENV npm_config_cache=/tmp/.npm' Dockerfile
+
+      - name: Build paymentservice image
+        uses: kindling-sh/kindling/.github/actions/kindling-build@main
+        with:
+          name: paymentservice
+          context: ${{ github.workspace }}/src/paymentservice
+          image: "${{ env.REGISTRY }}/paymentservice:${{ env.TAG }}"
+
+      - name: Patch productcatalogservice Dockerfile for Kaniko
+        shell: bash
+        run: |
+          cd ${{ github.workspace }}/src/productcatalogservice
+          sed -i 's/FROM --platform=\${BUILDPLATFORM} /FROM /g' Dockerfile
+          sed -i '/^ARG TARGETPLATFORM$/d' Dockerfile
+          sed -i '/^ARG TARGETARCH$/d' Dockerfile
+          sed -i '/^ARG BUILDPLATFORM$/d' Dockerfile
+          sed -i '/^ARG TARGETOS$/d' Dockerfile
+          sed -i '/^ARG TARGETVARIANT$/d' Dockerfile
+          sed -i 's/\$TARGETARCH/arm64/g; s/\${TARGETARCH}/arm64/g' Dockerfile
+          sed -i 's/\$TARGETPLATFORM/linux\/arm64/g; s/\${TARGETPLATFORM}/linux\/arm64/g' Dockerfile
+          sed -i 's/\$BUILDPLATFORM/linux\/arm64/g; s/\${BUILDPLATFORM}/linux\/arm64/g' Dockerfile
+          sed -i 's/\$TARGETOS/linux/g; s/\${TARGETOS}/linux/g' Dockerfile
+          sed -i 's/go build /go build -buildvcs=false /g' Dockerfile
+
+      - name: Build productcatalogservice image
+        uses: kindling-sh/kindling/.github/actions/kindling-build@main
+        with:
+          name: productcatalogservice
+          context: ${{ github.workspace }}/src/productcatalogservice
+          image: "${{ env.REGISTRY }}/productcatalogservice:${{ env.TAG }}"
+
+      - name: Patch recommendationservice Dockerfile for Kaniko
+        shell: bash
+        run: |
+          cd ${{ github.workspace }}/src/recommendationservice
+          sed -i 's/FROM --platform=\${BUILDPLATFORM} /FROM /g' Dockerfile
+          sed -i '/^ARG TARGETPLATFORM$/d' Dockerfile
+          sed -i '/^ARG TARGETARCH$/d' Dockerfile
+          sed -i '/^ARG BUILDPLATFORM$/d' Dockerfile
+          sed -i '/^ARG TARGETOS$/d' Dockerfile
+          sed -i '/^ARG TARGETVARIANT$/d' Dockerfile
+          sed -i 's/\$TARGETARCH/arm64/g; s/\${TARGETARCH}/arm64/g' Dockerfile
+          sed -i 's/\$TARGETPLATFORM/linux\/arm64/g; s/\${TARGETPLATFORM}/linux\/arm64/g' Dockerfile
+          sed -i 's/\$BUILDPLATFORM/linux\/arm64/g; s/\${BUILDPLATFORM}/linux\/arm64/g' Dockerfile
+          sed -i 's/\$TARGETOS/linux/g; s/\${TARGETOS}/linux/g' Dockerfile
+
+      - name: Build recommendationservice image
+        uses: kindling-sh/kindling/.github/actions/kindling-build@main
+        with:
+          name: recommendationservice
+          context: ${{ github.workspace }}/src/recommendationservice
+          image: "${{ env.REGISTRY }}/recommendationservice:${{ env.TAG }}"
+
+      - name: Patch shippingservice Dockerfile for Kaniko
+        shell: bash
+        run: |
+          cd ${{ github.workspace }}/src/shippingservice
+          sed -i 's/FROM --platform=\${BUILDPLATFORM} /FROM /g' Dockerfile
+          sed -i '/^ARG TARGETPLATFORM$/d' Dockerfile
+          sed -i '/^ARG TARGETARCH$/d' Dockerfile
+          sed -i '/^ARG BUILDPLATFORM$/d' Dockerfile
+          sed -i '/^ARG TARGETOS$/d' Dockerfile
+          sed -i '/^ARG TARGETVARIANT$/d' Dockerfile
+          sed -i 's/\$TARGETARCH/arm64/g; s/\${TARGETARCH}/arm64/g' Dockerfile
+          sed -i 's/\$TARGETPLATFORM/linux\/arm64/g; s/\${TARGETPLATFORM}/linux\/arm64/g' Dockerfile
+          sed -i 's/\$BUILDPLATFORM/linux\/arm64/g; s/\${BUILDPLATFORM}/linux\/arm64/g' Dockerfile
+          sed -i 's/\$TARGETOS/linux/g; s/\${TARGETOS}/linux/g' Dockerfile
+          sed -i 's/go build /go build -buildvcs=false /g' Dockerfile
+
+      - name: Build shippingservice image
+        uses: kindling-sh/kindling/.github/actions/kindling-build@main
+        with:
+          name: shippingservice
+          context: ${{ github.workspace }}/src/shippingservice
+          image: "${{ env.REGISTRY }}/shippingservice:${{ env.TAG }}"
+
+      - name: Patch shoppingassistantservice Dockerfile for Kaniko
+        shell: bash
+        run: |
+          cd ${{ github.workspace }}/src/shoppingassistantservice
+          sed -i 's/FROM --platform=\${BUILDPLATFORM} /FROM /g' Dockerfile
+          sed -i '/^ARG TARGETPLATFORM$/d' Dockerfile
+          sed -i '/^ARG TARGETARCH$/d' Dockerfile
+          sed -i '/^ARG BUILDPLATFORM$/d' Dockerfile
+          sed -i '/^ARG TARGETOS$/d' Dockerfile
+          sed -i '/^ARG TARGETVARIANT$/d' Dockerfile
+          sed -i 's/\$TARGETARCH/arm64/g; s/\${TARGETARCH}/arm64/g' Dockerfile
+          sed -i 's/\$TARGETPLATFORM/linux\/arm64/g; s/\${TARGETPLATFORM}/linux\/arm64/g' Dockerfile
+          sed -i 's/\$BUILDPLATFORM/linux\/arm64/g; s/\${BUILDPLATFORM}/linux\/arm64/g' Dockerfile
+          sed -i 's/\$TARGETOS/linux/g; s/\${TARGETOS}/linux/g' Dockerfile
+
+      - name: Build shoppingassistantservice image
+        uses: kindling-sh/kindling/.github/actions/kindling-build@main
+        with:
+          name: shoppingassistantservice
+          context: ${{ github.workspace }}/src/shoppingassistantservice
+          image: "${{ env.REGISTRY }}/shoppingassistantservice:${{ env.TAG }}"
+
+      # -- Deploy in dependency order --
+
+      - name: Deploy adservice
+        uses: kindling-sh/kindling/.github/actions/kindling-deploy@main
+        with:
+          name: "${{ github.actor }}-adservice"
+          image: "${{ env.REGISTRY }}/adservice:${{ env.TAG }}"
+          port: "9555"
+          ingress-host: "${{ github.actor }}-adservice.localhost"
+          labels: |
+            app.kubernetes.io/part-of: microservices-demo
+            app.kubernetes.io/component: adservice
+            apps.example.com/github-username: ${{ github.actor }}
+
+      - name: Deploy cartservice
+        uses: kindling-sh/kindling/.github/actions/kindling-deploy@main
+        with:
+          name: "${{ github.actor }}-cartservice"
+          image: "${{ env.REGISTRY }}/cartservice:${{ env.TAG }}"
+          port: "7070"
+          ingress-host: "${{ github.actor }}-cartservice.localhost"
+          labels: |
+            app.kubernetes.io/part-of: microservices-demo
+            app.kubernetes.io/component: cartservice
+            apps.example.com/github-username: ${{ github.actor }}
+          env: |
+            - name: REDIS_ADDR
+              value: "$(REDIS_URL)"
+          dependencies: |
+            - type: redis
+
+      - name: Deploy currencyservice
+        uses: kindling-sh/kindling/.github/actions/kindling-deploy@main
+        with:
+          name: "${{ github.actor }}-currencyservice"
+          image: "${{ env.REGISTRY }}/currencyservice:${{ env.TAG }}"
+          port: "7000"
+          ingress-host: "${{ github.actor }}-currencyservice.localhost"
+          labels: |
+            app.kubernetes.io/part-of: microservices-demo
+            app.kubernetes.io/component: currencyservice
+            apps.example.com/github-username: ${{ github.actor }}
+
+      - name: Deploy emailservice
+        uses: kindling-sh/kindling/.github/actions/kindling-deploy@main
+        with:
+          name: "${{ github.actor }}-emailservice"
+          image: "${{ env.REGISTRY }}/emailservice:${{ env.TAG }}"
+          port: "8080"
+          ingress-host: "${{ github.actor }}-emailservice.localhost"
+          labels: |
+            app.kubernetes.io/part-of: microservices-demo
+            app.kubernetes.io/component: emailservice
+            apps.example.com/github-username: ${{ github.actor }}
+
+      - name: Deploy paymentservice
+        uses: kindling-sh/kindling/.github/actions/kindling-deploy@main
+        with:
+          name: "${{ github.actor }}-paymentservice"
+          image: "${{ env.REGISTRY }}/paymentservice:${{ env.TAG }}"
+          port: "50051"
+          ingress-host: "${{ github.actor }}-paymentservice.localhost"
+          labels: |
+            app.kubernetes.io/part-of: microservices-demo
+            app.kubernetes.io/component: paymentservice
+            apps.example.com/github-username: ${{ github.actor }}
+
+      - name: Deploy productcatalogservice
+        uses: kindling-sh/kindling/.github/actions/kindling-deploy@main
+        with:
+          name: "${{ github.actor }}-productcatalogservice"
+          image: "${{ env.REGISTRY }}/productcatalogservice:${{ env.TAG }}"
+          port: "3550"
+          ingress-host: "${{ github.actor }}-productcatalogservice.localhost"
+          labels: |
+            app.kubernetes.io/part-of: microservices-demo
+            app.kubernetes.io/component: productcatalogservice
+            apps.example.com/github-username: ${{ github.actor }}
+
+      - name: Deploy recommendationservice
+        uses: kindling-sh/kindling/.github/actions/kindling-deploy@main
+        with:
+          name: "${{ github.actor }}-recommendationservice"
+          image: "${{ env.REGISTRY }}/recommendationservice:${{ env.TAG }}"
+          port: "8080"
+          ingress-host: "${{ github.actor }}-recommendationservice.localhost"
+          labels: |
+            app.kubernetes.io/part-of: microservices-demo
+            app.kubernetes.io/component: recommendationservice
+            apps.example.com/github-username: ${{ github.actor }}
+          env: |
+            - name: PRODUCT_CATALOG_SERVICE_ADDR
+              value: "${{ github.actor }}-productcatalogservice:3550"
+
+      - name: Deploy shippingservice
+        uses: kindling-sh/kindling/.github/actions/kindling-deploy@main
+        with:
+          name: "${{ github.actor }}-shippingservice"
+          image: "${{ env.REGISTRY }}/shippingservice:${{ env.TAG }}"
+          port: "50051"
+          ingress-host: "${{ github.actor }}-shippingservice.localhost"
+          labels: |
+            app.kubernetes.io/part-of: microservices-demo
+            app.kubernetes.io/component: shippingservice
+            apps.example.com/github-username: ${{ github.actor }}
+
+      - name: Deploy shoppingassistantservice
+        uses: kindling-sh/kindling/.github/actions/kindling-deploy@main
+        with:
+          name: "${{ github.actor }}-shoppingassistantservice"
+          image: "${{ env.REGISTRY }}/shoppingassistantservice:${{ env.TAG }}"
+          port: "8080"
+          ingress-host: "${{ github.actor }}-shoppingassistantservice.localhost"
+          labels: |
+            app.kubernetes.io/part-of: microservices-demo
+            app.kubernetes.io/component: shoppingassistantservice
+            apps.example.com/github-username: ${{ github.actor }}
+
+      - name: Deploy checkoutservice
+        uses: kindling-sh/kindling/.github/actions/kindling-deploy@main
+        with:
+          name: "${{ github.actor }}-checkoutservice"
+          image: "${{ env.REGISTRY }}/checkoutservice:${{ env.TAG }}"
+          port: "5050"
+          ingress-host: "${{ github.actor }}-checkoutservice.localhost"
+          labels: |
+            app.kubernetes.io/part-of: microservices-demo
+            app.kubernetes.io/component: checkoutservice
+            apps.example.com/github-username: ${{ github.actor }}
+          env: |
+            - name: PRODUCT_CATALOG_SERVICE_ADDR
+              value: "${{ github.actor }}-productcatalogservice:3550"
+            - name: CART_SERVICE_ADDR
+              value: "${{ github.actor }}-cartservice:7070"
+            - name: CURRENCY_SERVICE_ADDR
+              value: "${{ github.actor }}-currencyservice:7000"
+            - name: SHIPPING_SERVICE_ADDR
+              value: "${{ github.actor }}-shippingservice:50051"
+            - name: PAYMENT_SERVICE_ADDR
+              value: "${{ github.actor }}-paymentservice:50051"
+            - name: EMAIL_SERVICE_ADDR
+              value: "${{ github.actor }}-emailservice:8080"
+
+      - name: Deploy frontend
+        uses: kindling-sh/kindling/.github/actions/kindling-deploy@main
+        with:
+          name: "${{ github.actor }}-frontend"
+          image: "${{ env.REGISTRY }}/frontend:${{ env.TAG }}"
+          port: "8080"
+          ingress-host: "${{ github.actor }}-frontend.localhost"
+          health-check-path: "/"
+          labels: |
+            app.kubernetes.io/part-of: microservices-demo
+            app.kubernetes.io/component: frontend
+            apps.example.com/github-username: ${{ github.actor }}
+          env: |
+            - name: PRODUCT_CATALOG_SERVICE_ADDR
+              value: "${{ github.actor }}-productcatalogservice:3550"
+            - name: CART_SERVICE_ADDR
+              value: "${{ github.actor }}-cartservice:7070"
+            - name: CURRENCY_SERVICE_ADDR
+              value: "${{ github.actor }}-currencyservice:7000"
+            - name: RECOMMENDATION_SERVICE_ADDR
+              value: "${{ github.actor }}-recommendationservice:8080"
+            - name: CHECKOUT_SERVICE_ADDR
+              value: "${{ github.actor }}-checkoutservice:5050"
+            - name: SHIPPING_SERVICE_ADDR
+              value: "${{ github.actor }}-shippingservice:50051"
+            - name: AD_SERVICE_ADDR
+              value: "${{ github.actor }}-adservice:9555"
+            - name: SHOPPING_ASSISTANT_SERVICE_ADDR
+              value: "${{ github.actor }}-shoppingassistantservice:8080"
+          # NOTE: OAuth detected — run 'kindling expose' for a public HTTPS URL
+
+      - name: Deploy loadgenerator
+        uses: kindling-sh/kindling/.github/actions/kindling-deploy@main
+        with:
+          name: "${{ github.actor }}-loadgenerator"
+          image: "${{ env.REGISTRY }}/loadgenerator:${{ env.TAG }}"
+          port: "8089"
+          ingress-host: "${{ github.actor }}-loadgenerator.localhost"
+          labels: |
+            app.kubernetes.io/part-of: microservices-demo
+            app.kubernetes.io/component: loadgenerator
+            apps.example.com/github-username: ${{ github.actor }}
+          env: |
+            - name: FRONTEND_ADDR
+              value: "${{ github.actor }}-frontend:8080"
+          wait: "false"
